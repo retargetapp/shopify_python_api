@@ -167,7 +167,7 @@ class SessionTest(TestCase):
         hmac = shopify.Session.calculate_hmac(params)
         params['hmac'] = hmac
 
-        self.fake(None, url='https://localhost.myshopify.com/admin/oauth/access_token', method='POST', body='{"access_token" : "token"}', has_user_agent=False)
+        self.fake(None, url='https://localhost.myshopify.com/admin/oauth/access_token', method='POST', body='{"access_token" : "token", "scope" : "write_orders,read_customers"}', has_user_agent=False)
         session = shopify.Session('http://localhost.myshopify.com')
         token = session.request_token(params)
         self.assertEqual("token", token)
@@ -203,6 +203,18 @@ class SessionTest(TestCase):
         with self.assertRaises(shopify.ValidationException):
             session = shopify.Session('http://localhost.myshopify.com')
             session = session.request_token(params)
+
+    def test_return_token_with_scope(self):
+        shopify.Session.secret='secret'
+        params = {'code': 'any-code', 'timestamp': time.time()}
+        hmac = shopify.Session.calculate_hmac(params)
+        params['hmac'] = hmac
+
+        self.fake(None, url='https://localhost.myshopify.com/admin/oauth/access_token', method='POST', body='{"access_token" : "token", "scope" : "write_orders,read_customers"}', has_user_agent=False)
+        session = shopify.Session('http://localhost.myshopify.com')
+        token, scope = session.request_token_with_scope(params)
+        self.assertEqual("token", token)
+        self.assertEqual(["write_orders", "read_customers"], scope)
 
     def normalize_url(self, url):
         scheme, netloc, path, query, fragment = urllib.parse.urlsplit(url)

@@ -48,7 +48,7 @@ class Session(object):
         if redirect_uri: query_params['redirect_uri'] = redirect_uri
         return "%s/oauth/authorize?%s" % (self.site, urllib.parse.urlencode(query_params))
 
-    def request_token(self, params):
+    def request_token_with_scope(self, params):
         if self.token:
             return self.token
 
@@ -63,10 +63,15 @@ class Session(object):
         response = urllib.request.urlopen(request)
 
         if response.code == 200:
-            self.token = json.loads(response.read().decode('utf-8'))['access_token']
-            return self.token
+            token_data = json.loads(response.read().decode('utf-8'))
+            self.token = token_data['access_token']
+            return token_data['access_token'], list(token_data['scope'].split(","))
         else:
             raise Exception(response.msg)
+
+    def request_token(self, params):
+        token, scope = self.request_token_with_scope(params)
+        return token
 
     @property
     def site(self):
